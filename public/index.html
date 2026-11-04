@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quán Nhậu 3D</title>
+<style>
+  :root { --bg: rgba(10,12,24,.74); --line: rgba(255,255,255,.16); --gold: #ffd45a; --red: #e24a3b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #070a1c; overflow: hidden; font-family: "Be Vietnam Pro", "Segoe UI", Roboto, Arial, sans-serif; color: #fff; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .panel { position: fixed; background: var(--bg); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(6px); padding: 10px 14px; }
+  #howto { top: 12px; left: 12px; max-width: 330px; font-size: 15px; line-height: 1.45; }
+  #howto h1 { margin: 0 0 6px; font-size: 19px; color: var(--gold); letter-spacing: .3px; }
+  #howto .big { font-size: 17px; font-weight: 700; }
+  #howto table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+  #howto td { padding: 2px 0; } #howto td:last-child { text-align: right; color: var(--gold); font-weight: 700; white-space: nowrap; }
+  #map { top: 12px; right: 12px; width: 232px; font-size: 12.5px; }
+  #map h2 { margin: 0 0 6px; font-size: 14px; color: var(--gold); }
+  #grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+  .tb { display: flex; justify-content: space-between; align-items: center; padding: 2px 6px; border-radius: 8px; background: rgba(255,255,255,.06); }
+  .tb.full { background: rgba(226,74,59,.35); }
+  .tb b { font-weight: 700; } .tb small { opacity: .7; margin-left: 4px; }
+  .pip { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-left: 2px; background: rgba(255,255,255,.2); }
+  .pip.on { background: #6bff9a; } .tb.full .pip.on { background: #ff8c7e; }
+  #feed { left: 50%; transform: translateX(-50%); bottom: 14px; width: min(760px, calc(100vw - 24px)); font-size: 16px; min-height: 40px; }
+  #feed div { padding: 2px 0; animation: in .25s ease-out; } #feed i { font-style: normal; font-weight: 700; margin-right: 6px; }
+  .k-guest i { color: #9ad1ff; } .k-staff i { color: #ff9a8e; } .k-owner i { color: var(--gold); } .k-npc i { color: #8ff0b4; } .k-sys i { color: #bbb; }
+  @keyframes in { from { opacity: 0; transform: translateY(6px); } }
+  #status { bottom: 14px; right: 12px; font-size: 12.5px; padding: 6px 10px; }
+  #status .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #888; margin-right: 6px; } #status .ok { background: #5aff8a; } #status .err { background: #ff5a5a; } #status .wait { background: #ffd45a; }
+  #start { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(5,7,18,.78); z-index: 10; cursor: pointer; text-align: center; padding: 20px; }
+  #start h1 { margin: 0; font-size: clamp(28px, 6vw, 54px); color: var(--gold); } #start p { margin: 0; opacity: .85; font-size: clamp(15px, 2.4vw, 20px); }
+  #start button { font: inherit; font-weight: 700; font-size: 20px; padding: 14px 34px; border-radius: 999px; border: 0; background: var(--gold); color: #2a1a00; cursor: pointer; }
+  #dev { display: none; left: 12px; bottom: 12px; width: 320px; font-size: 13px; max-height: 70vh; overflow: auto; }
+  #dev.show { display: block; } #dev h3 { margin: 8px 0 4px; font-size: 13px; color: var(--gold); }
+  #dev input, #dev button, #dev select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.1); color: #fff; }
+  #dev input { width: 100%; margin: 2px 0; } #dev button { cursor: pointer; margin: 2px 2px 2px 0; } #dev button:hover { background: rgba(255,255,255,.22); }
+  #dev label { display: flex; align-items: center; gap: 6px; margin: 2px 0; } #dev input[type=range] { padding: 0; }
+  body.nohud #howto, body.nohud #map, body.nohud #feed, body.nohud #status { display: none; }
+  @media (max-aspect-ratio: 1/1) {
+    #howto { max-width: 52vw; font-size: 13px; padding: 8px 10px; } #howto h1 { font-size: 16px; } #howto table { font-size: 12px; }
+    #map { width: 40vw; font-size: 11px; padding: 8px; } #feed { font-size: 14px; bottom: 60px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="howto" class="panel">
+  <h1 id="ttl">🍺 QUÁN NHẬU</h1>
+  <div class="big">Comment <b style="color:var(--gold)">SỐ GHẾ 1–80</b> để vào bàn</div>
+  <div>Vào bàn xong comment <b>bia</b> / <b>lạc</b> để gọi món: mỗi người <b>2 bia free</b>, mỗi bàn <b>1 đĩa lạc free</b>. Không thả quà sau <b id="fs">2</b> phút là mời xuống!</div>
+  <table id="menu"></table>
+</div>
+
+<div id="map" class="panel"><h2>🪑 Bàn &amp; ghế trống</h2><div id="grid"></div></div>
+<div id="feed" class="panel"></div>
+<div id="status" class="panel"><span class="dot"></span><span id="stxt">Chưa kết nối TikTok</span></div>
+
+<div id="dev" class="panel">
+  <b>Bảng điều khiển (phím D)</b>
+  <h3>Kết nối TikTok Live</h3>
+  <input id="tkuser" placeholder="username TikTok (không cần @)">
+  <button id="tkgo">Kết nối</button> <button id="tkstop">Ngắt</button>
+  <h3>Giả lập người xem</h3>
+  <input id="simname" placeholder="tên" value="Khách thử">
+  <input id="simtext" placeholder="comment, ví dụ: 5  hoặc  bia  hoặc  lạc rang">
+  <button id="simchat">Gửi comment</button> <button id="simjoin">Vào phòng</button>
+  <div><button data-g="1">Quà 1 xu</button><button data-g="5">5 xu</button><button data-g="10">10 xu</button><button data-g="30">30 xu</button><button data-g="99">99 xu</button></div>
+  <label><input type="checkbox" id="bot"> Bot tự động chat (demo)</label>
+  <h3>Camera (phím 1-4)</h3>
+  <button data-cam="tong">1 Tổng</button><button data-cam="gan">2 Gần bàn</button><button data-cam="quay">3 Quay quanh</button><button data-cam="cao">4 Từ cao</button>
+  <h3>Âm lượng</h3>
+  <label>Tổng <input type="range" id="vm" min="0" max="1" step="0.05" value="1"></label>
+  <label>Nhạc nền <input type="range" id="vb" min="0" max="1" step="0.05" value="0.35"></label>
+  <label>Hiệu ứng <input type="range" id="vs" min="0" max="1" step="0.05" value="0.7"></label>
+  <label>Giọng nói <input type="range" id="vv" min="0" max="1" step="0.05" value="1"></label>
+  <label><input type="checkbox" id="tts" checked> Đọc bằng giọng máy khi chưa có file voice</label>
+  <button id="nextbgm">Bài tiếp</button>
+</div>
+
+<div id="start"><h1>🍺 QUÁN NHẬU 3D</h1><p>Chạm để bật âm thanh và bắt đầu</p><button>BẮT ĐẦU</button></div>
+
+<script type="importmap">
+{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/examples/jsm/" } }
+</script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
