@@ -20,13 +20,19 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, 0.3, 1500);
 
+// Phố chạy dọc trục z, ngã tư ở z=0, 20 bàn nằm ở z≈19..48 hai bên vỉa hè.
 const CAMS = {
-  tong: { pos: [0, 21, -30], look: [0, 22, 60], sway: 1.2 },
+  tong: { pos: [0, 15, 3], look: [0, 1, 40], sway: 1.0 },          // nhìn dọc phố thấy cả 20 bàn
+  thap: { pos: [0, 21, -30], look: [0, 22, 60], sway: 1.2 },       // nhà cao tầng + tháp Eiffel
   gan:  { pos: [0, 7.5, 6], look: [0, 1.5, 34], sway: 0.6 },
   cao:  { pos: [0, 70, 20], look: [0, 0, 32], sway: 0 },
   quay: { orbit: true },
+  ban:  { follow: true },                                           // bám theo bàn vừa gọi món
 };
-let camMode = qs.get('cam') || 'tong', camT = 0;
+// Chế độ tự động: lần lượt đổi góc quay, [tên cam, số giây]
+const AUTO = [['thap', 9], ['tong', 12], ['ban', 9], ['gan', 10], ['quay', 14], ['ban', 9], ['cao', 7]];
+let camMode = qs.get('cam') || 'auto', camT = 0, autoI = 0, autoT = 0;
+let focusTable = 1, focusAt = 0;
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -34,20 +40,36 @@ function resize() {
   camera.aspect = w / h; camera.fov = w / h < 1 ? 78 : 60; camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize); resize();
-function setCam(m) { if (CAMS[m]) camMode = m; }
+function setCam(m) { if (m === 'auto' || CAMS[m]) { camMode = m; autoI = 0; autoT = 0; } }
+function pickFocusTable() {
+  if (performance.now() - focusAt < 20000 && tavern.tableCount(focusTable)) return focusTable; // vừa có người gọi món
+  const occ = []; for (let t = 1; t <= CONFIG.tables; t++) if (tavern.tableCount(t)) occ.push(t);
+  return occ.length ? occ[Math.floor(Math.random() * occ.length)] : 1 + Math.floor(Math.random() * CONFIG.tables);
+}
+let curCam = null;
 function updateCamera(dt) {
-  camT += dt; const c = CAMS[camMode];
+  camT += dt;
+  let name = camMode;
+  if (camMode === 'auto') {
+    autoT += dt; if (autoT >= AUTO[autoI][1]) { autoT = 0; autoI = (autoI + 1) % AUTO.length; curCam = null; }
+    name = AUTO[autoI][0];
+  }
+  if (name !== curCam) { curCam = name; if (name === 'ban') focusTable = pickFocusTable(); }
+  const c = CAMS[name];
   let p, l;
-  if (c.orbit) {
+  if (c.follow) {
+    const tp = tablePos(focusTable), sx = Math.sign(tp.x);
+    p = [tp.x - sx * 6.5, 4.2, tp.z - 8]; l = [tp.x, 1.2, tp.z + 0.5];
+  } else if (c.orbit) {
     const a = camT * 0.12, cx = 0, cz = 35;
     p = [cx + Math.sin(a) * 26, 9, cz - Math.cos(a) * 26 - 6]; l = [0, 2, 33];
   } else {
     p = [c.pos[0] + Math.sin(camT * 0.15) * c.sway * 2, c.pos[1] + Math.sin(camT * 0.21) * c.sway * 0.5, c.pos[2]]; l = c.look;
   }
-  camPos.lerp(new THREE.Vector3(...p), Math.min(1, dt * 2.5)); camLook.lerp(new THREE.Vector3(...l), Math.min(1, dt * 2.5));
+  camPos.lerp(new THREE.Vector3(...p), Math.min(1, dt * 1.6)); camLook.lerp(new THREE.Vector3(...l), Math.min(1, dt * 1.6));
   camera.position.copy(camPos); camera.lookAt(camLook);
 }
-camPos.set(...CAMS.tong.pos); camLook.set(...CAMS.tong.look);
+camPos.set(...CAMS.thap.pos); camLook.set(...CAMS.thap.look);
 
 // ---------- thế giới + logic ----------
 const world = buildWorld(scene);
@@ -91,7 +113,8 @@ stage.tavern = tavern;
 {
   const h = stage.hooks();
   tavern.hooks = {
-    spectatorAdd: h.spectatorAdd, spectatorRemove: h.spectatorRemove, speech: h.speech, order: h.order, tableFull: h.tableFull,
+    spectatorAdd: h.spectatorAdd, spectatorRemove: h.spectatorRemove, speech: h.speech, tableFull: h.tableFull,
+    order: (o) => { h.order(o); focusTable = o.table; focusAt = performance.now(); },
     guestSeated: (g) => { h.guestSeated(g); refreshMap(); },
     guestLeft: (g, r) => { h.guestLeft(g, r); refreshMap(); },
   };
@@ -129,9 +152,19 @@ addEventListener('keydown', (e) => {
   if (e.target.matches('input')) return;
   if (e.key === 'd' || e.key === 'D') dev.classList.toggle('show');
   if (e.key === 'h' || e.key === 'H') document.body.classList.toggle('nohud');
-  const m = { 1: 'tong', 2: 'gan', 3: 'quay', 4: 'cao' }[e.key]; if (m) setCam(m);
+  const m = { 0: 'auto', 1: 'tong', 2: 'gan', 3: 'quay', 4: 'cao', 5: 'thap', 6: 'ban' }[e.key]; if (m) setCam(m);
 });
-if (qs.get('dev') === '1') dev.classList.add('show');
+if (qs.get('dev') !== '0') dev.classList.add('show'); // mở sẵn bảng điều khiển; bấm nút ⚙ hoặc phím D để ẩn/hiện
+$('devbtn').onclick = () => dev.classList.toggle('show');
+// chọn giọng đọc
+const vsel = $('voicesel');
+audio.onVoices = () => {
+  vsel.innerHTML = audio.voices.length ? '' : '<option>(máy chưa có giọng tiếng Việt – hãy mở bằng Microsoft Edge)</option>';
+  const cur = audio.currentVoice();
+  for (const v of audio.voices) { const o = document.createElement('option'); o.value = o.textContent = v.name; o.selected = v === cur; vsel.append(o); }
+};
+vsel.onchange = () => { audio.setVoice(vsel.value); audio.testVoice(); };
+$('voicetest').onclick = () => audio.testVoice();
 let simId = 1000;
 const simUser = () => { const n = $('simname').value.trim() || 'Khách'; return { userId: 'sim_' + n, uniqueId: n, nickname: n }; };
 $('simchat').onclick = () => handle({ type: 'chat', ...simUser(), comment: $('simtext').value });

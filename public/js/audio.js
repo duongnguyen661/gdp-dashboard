@@ -25,7 +25,7 @@ export class AudioSystem {
     this.startFileLoops();
     this.startBgm();
     if ('speechSynthesis' in window) {
-      const load = () => { this.voices = speechSynthesis.getVoices().filter((v) => /vi/i.test(v.lang)); };
+      const load = () => { this.voices = speechSynthesis.getVoices().filter((v) => /^vi/i.test(v.lang)); this.onVoices?.(); };
       load(); speechSynthesis.onvoiceschanged = load;
     }
     this.apply();
@@ -117,9 +117,27 @@ export class AudioSystem {
     if (!this.ttsOn || !('speechSynthesis' in window) || !this.started) return null;
     if (speechSynthesis.pending && speechSynthesis.speaking) return null; // đang bận thì bỏ, tránh dồn hàng đợi
     const u = new SpeechSynthesisUtterance(text.replace(/[!]/g, ''));
-    u.lang = 'vi-VN'; if (this.voices[0]) u.voice = this.voices[0];
-    const P = { guest: [1.0, 1.05], staff: [1.35, 1.12], owner: [0.7, 0.95], hangrong: [0.9, 0.95], xeom: [0.8, 1.05] }[role] || [1, 1];
+    u.lang = 'vi-VN'; const v = this.currentVoice(); if (v) u.voice = v;
+    // giữ tốc độ ~1 và cao độ gần 1 cho dễ nghe; chỉ lệch nhẹ để phân biệt vai
+    const P = { guest: [1.0, 1.0], staff: [1.08, 1.0], owner: [0.85, 0.95], hangrong: [0.95, 1.0], xeom: [0.8, 1.0] }[role] || [1, 1];
     u.pitch = P[0]; u.rate = P[1]; u.volume = Math.min(1, this.vol.voice * this.vol.master);
     speechSynthesis.speak(u); return u;
+  }
+
+  // ---- chọn giọng đọc: mặc định giọng nam Microsoft NamMinh (Online Natural), có thể đổi trong bảng điều khiển ----
+  currentVoice() {
+    const list = this.voices; if (!list.length) return null;
+    let want = null; try { want = localStorage.getItem('qn_voice'); } catch { /* bỏ qua */ }
+    return list.find((v) => v.name === want)
+      || list.find((v) => /nam\s*minh/i.test(v.name))
+      || list.find((v) => !/hoai\s*my|an\b/i.test(v.name) && /\b(nam|male)\b/i.test(v.name))
+      || list[0];
+  }
+  setVoice(name) { try { localStorage.setItem('qn_voice', name); } catch { /* bỏ qua */ } }
+  testVoice(text = 'Một bia em ơi! Bàn số bảy, bia lạnh tới rồi anh em ơi!') {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = 'vi-VN'; const v = this.currentVoice(); if (v) u.voice = v;
+    u.volume = Math.min(1, this.vol.voice * this.vol.master); speechSynthesis.speak(u);
   }
 }

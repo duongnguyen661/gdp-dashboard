@@ -32,12 +32,13 @@
   #start { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(5,7,18,.78); z-index: 10; cursor: pointer; text-align: center; padding: 20px; }
   #start h1 { margin: 0; font-size: clamp(28px, 6vw, 54px); color: var(--gold); } #start p { margin: 0; opacity: .85; font-size: clamp(15px, 2.4vw, 20px); }
   #start button { font: inherit; font-weight: 700; font-size: 20px; padding: 14px 34px; border-radius: 999px; border: 0; background: var(--gold); color: #2a1a00; cursor: pointer; }
-  #dev { display: none; left: 12px; bottom: 12px; width: 320px; font-size: 13px; max-height: 70vh; overflow: auto; }
+  #devbtn { position: fixed; left: 12px; bottom: 12px; z-index: 5; font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: #fff; cursor: pointer; }
+  #dev { display: none; left: 12px; bottom: 54px; width: 320px; font-size: 13px; max-height: calc(100vh - 140px); overflow: auto; z-index: 5; }
   #dev.show { display: block; } #dev h3 { margin: 8px 0 4px; font-size: 13px; color: var(--gold); }
   #dev input, #dev button, #dev select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.1); color: #fff; }
   #dev input { width: 100%; margin: 2px 0; } #dev button { cursor: pointer; margin: 2px 2px 2px 0; } #dev button:hover { background: rgba(255,255,255,.22); }
   #dev label { display: flex; align-items: center; gap: 6px; margin: 2px 0; } #dev input[type=range] { padding: 0; }
-  body.nohud #howto, body.nohud #map, body.nohud #feed, body.nohud #status { display: none; }
+  body.nohud #howto, body.nohud #map, body.nohud #feed, body.nohud #status, body.nohud #devbtn, body.nohud #dev { display: none; }
   @media (max-aspect-ratio: 1/1) {
     #howto { max-width: 52vw; font-size: 13px; padding: 8px 10px; } #howto h1 { font-size: 16px; } #howto table { font-size: 12px; }
     #map { width: 40vw; font-size: 11px; padding: 8px; } #feed { font-size: 14px; bottom: 60px; }
@@ -58,6 +59,7 @@
 <div id="feed" class="panel"></div>
 <div id="status" class="panel"><span class="dot"></span><span id="stxt">Chưa kết nối TikTok</span></div>
 
+<button id="devbtn" title="Bảng điều khiển (phím D)">⚙ Bảng điều khiển</button>
 <div id="dev" class="panel">
   <b>Bảng điều khiển (phím D)</b>
   <h3>Kết nối TikTok Live</h3>
@@ -69,8 +71,11 @@
   <button id="simchat">Gửi comment</button> <button id="simjoin">Vào phòng</button>
   <div><button data-g="1">Quà 1 xu</button><button data-g="5">5 xu</button><button data-g="10">10 xu</button><button data-g="30">30 xu</button><button data-g="99">99 xu</button></div>
   <label><input type="checkbox" id="bot"> Bot tự động chat (demo)</label>
-  <h3>Camera (phím 1-4)</h3>
-  <button data-cam="tong">1 Tổng</button><button data-cam="gan">2 Gần bàn</button><button data-cam="quay">3 Quay quanh</button><button data-cam="cao">4 Từ cao</button>
+  <h3>Camera (phím 0-6)</h3>
+  <button data-cam="auto">0 Tự động</button><button data-cam="tong">1 Dọc phố</button><button data-cam="gan">2 Gần bàn</button><button data-cam="quay">3 Quay quanh</button><button data-cam="cao">4 Từ cao</button><button data-cam="thap">5 Nhà cao + tháp</button><button data-cam="ban">6 Theo bàn gọi món</button>
+  <h3>Giọng đọc</h3>
+  <select id="voicesel" style="width:100%"></select>
+  <button id="voicetest">Thử giọng</button>
   <h3>Âm lượng</h3>
   <label>Tổng <input type="range" id="vm" min="0" max="1" step="0.05" value="1"></label>
   <label>Nhạc nền <input type="range" id="vb" min="0" max="1" step="0.05" value="0.35"></label>

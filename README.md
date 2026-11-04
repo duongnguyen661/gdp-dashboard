@@ -13,8 +13,9 @@ npm start -- tenTikTokCuaBan      # tên TikTok đang live (không cần @)
 Mở http://localhost:3000 rồi bấm **BẮT ĐẦU** (trình duyệt cần 1 cú bấm mới cho phát âm thanh).
 
 - Thử không cần live: http://localhost:3000/?demo=1 (bot tự vào bàn, gọi món)
-- Phím **D**: bảng điều khiển (nhập username TikTok, giả lập comment/quà, chỉnh âm lượng)
-- Phím **H**: ẩn/hiện khung chữ  ·  Phím **1/2/3/4**: đổi camera (tổng / gần / quay / cao)
+- Nút **⚙ Bảng điều khiển** (góc trái dưới, hoặc phím **D**): nhập username TikTok, giả lập comment/quà, chọn camera, chọn giọng đọc, chỉnh âm lượng. **Ẩn bảng này trước khi live** (bấm lại nút ⚙, hoặc mở `?dev=0`)
+- Phím **H**: ẩn/hiện toàn bộ khung chữ
+- Camera: **0** tự động đổi góc (mặc định) · **1** dọc phố · **2** gần bàn · **3** quay quanh · **4** từ cao · **5** nhà cao + tháp Eiffel · **6** bám theo bàn vừa gọi món
 - Có thể đặt username qua biến môi trường: `TIKTOK_USER=tenban npm start`
 
 ## Cách live
@@ -37,6 +38,10 @@ Mở http://localhost:3000 rồi bấm **BẮT ĐẦU** (trình duyệt cần 1 
 | Khách đã thả quà | Được ngồi đến khi không hoạt động 15 phút |
 
 Người xem chưa vào bàn đứng ở vỉa hè đối diện. Có thêm người đi đường, chó xin ăn, bán hàng rong, xe ôm, xe cộ.
+
+## Giọng đọc
+
+Khi chưa có file voice, quán đọc bằng giọng máy tiếng Việt. Mặc định chọn giọng nam **Microsoft NamMinh Online (Natural)**. Giọng "Online (Natural)" (NamMinh, HoaiMy) chỉ có khi mở bằng **Microsoft Edge**, Chrome thường chỉ có giọng cũ khó nghe. Đổi giọng trong bảng điều khiển → *Giọng đọc* → *Thử giọng*.
 
 ## Âm thanh – bỏ file của bạn vào `public/audio/`
 
